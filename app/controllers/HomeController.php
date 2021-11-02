@@ -17,7 +17,10 @@
         {
             // xu ly data - logic o day
  
-            $students = $this->homeModel->getDataStudents();
+            $students = $this->homeModel->getDataAdmins();
+            echo "<pre>";
+            print_r($students);
+            die;
             
             $headers = [
                 'title' => 'home page 123',
