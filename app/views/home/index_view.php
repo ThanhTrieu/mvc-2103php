@@ -1,3 +1,4 @@
+<?php if(!defined('ROOT_PATH')) { exit('can not access'); } ?>
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
@@ -7,31 +8,27 @@
     </div>
     <div class="row">
         <div class="col">
-            <h4>Thong tin sinh vien!</h4>
+            <h4>Thong tin nguoi dung!</h4>
             <table class="table table-striped table-hover">
                 <thead>
                     <tr>
-                        <th>MaSV</th>
-                        <th>Ho Ten</th>
-                        <th>Tuoi</th>
+                        <th>ID</th>
                         <th>Email</th>
-                        <th>Dien Thoai</th>
-                        <th>Dia Chi</th>
-                        <th>Gioi Tinh</th>
-                        <th>Hoc Bong</th>
+                        <th>Phone</th>
+                        <th>Address</th>
+                        <th>Gender</th>
+                        <th>birthday</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach($student as $key => $item): ?>
+                    <?php foreach($listUser as $key => $item): ?>
                         <tr>
                             <td><?= $item['id']; ?></td>
-                            <td><?= $item['name']; ?></td>
-                            <td><?= $item['age']; ?></td>
                             <td><?= $item['email']; ?></td>
                             <td><?= $item['phone']; ?></td>
                             <td><?= $item['address']; ?></td>
                             <td><?= $item['gender'] === 1 ? 'Nam' : 'Nu' ; ?></td>
-                            <td><?= $item['money']; ?></td>
+                            <td><?= $item['birthday']; ?></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

@@ -10,6 +10,7 @@
         private $homeModel;
         public function __construct()
         {
+            parent::__construct();
             $this->homeModel = new HomeModel();
         }
         
@@ -17,10 +18,10 @@
         {
             // xu ly data - logic o day
  
-            $students = $this->homeModel->getDataAdmins();
-            echo "<pre>";
-            print_r($students);
-            die;
+            $listUser = $this->homeModel->getDataAdmins();
+            // echo "<pre>";
+            // print_r($listUser);
+            // die;
             
             $headers = [
                 'title' => 'home page 123',
@@ -31,7 +32,7 @@
             $this->loadHeaderView($headers);
             // load content view
             $this->loadView('home/index_view',[
-                'student' => $students
+                'listUser' => $listUser
             ]);
             // load footer view
             $this->loadFooterView();
