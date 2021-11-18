@@ -4,6 +4,13 @@
 
 define('ENVIRONMENT', 'development');
 
+function deleteFileFromServer($pathFile, $nameFile)
+{
+    if(file_exists($pathFile.$nameFile)){
+        unlink($pathFile.$nameFile);
+    }
+}
+
 function uploadFileToServer($file, $pathUpload, $type = 1)
 {
     // $type === 1 // anh

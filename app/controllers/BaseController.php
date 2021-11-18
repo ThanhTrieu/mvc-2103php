@@ -14,6 +14,13 @@
             }
         }
 
+        protected function notFoundData()
+        {
+            $this->loadHeaderView();
+            $this->loadView('partials/not_found_view');
+            $this->loadFooterView();
+        }
+
         protected function checkSessionLogin()
         {
             $idUser = $this->getSessionIdUser();
