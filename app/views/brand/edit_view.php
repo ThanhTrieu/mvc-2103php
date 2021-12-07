@@ -7,6 +7,24 @@
     </div>
     <div class="row">
         <div class="col">
+            
+            <?php if(!empty($messErrors)): ?>
+                <ul>
+                    <?php foreach($messErrors as $err): ?>
+                        <?php if(!empty($err)): ?>
+                            <li class="text-danger"><?= $err; ?></li>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+
+            <?php if(!empty($existName)): ?>
+                <p class="text-danger">Thuong hieu <b><?= $existName; ?></b> da ton tai, vui long nhap ten khac</p>
+            <?php endif; ?>
+
+            <?php if($state === 'fail'): ?>
+                <p class="text-danger"> Co loi xay ra, vui long thu lai sau</p>
+            <?php endif; ?>
 
             <form class="border p-3" method="post" action="?c=brand&m=handleEdit&id=<?= $infoBrand['id']; ?>" enctype="multipart/form-data">
                 <div class="form-group">

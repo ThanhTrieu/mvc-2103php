@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use app\controllers\BaseController;
 use app\libraries\ValidationBrand;
+use app\libraries\Pagination;
 use app\models\BrandModel;
 
 class BrandController extends BaseController
@@ -19,7 +20,19 @@ class BrandController extends BaseController
 
     public function index()
     {
-        $listBrands = $this->brandModel->getListBrands();
+        $keyword = trim($_GET['s'] ?? '');
+        $keyword = strip_tags($keyword);
+
+        $linkPage = Pagination::createLink([
+            'c' => 'brand',
+            'm' => 'index',
+            'page' => '{page}',
+            's' => $keyword
+        ]);
+        $page = trim($_GET['page'] ?? '');
+        $page = (is_numeric($page) & $page > 0) ? $page : 1; 
+
+        $listBrands = $this->brandModel->getListBrands($keyword);
         // trang hien thi danh sach cac thuong hieu
         $headers = [
             'title' => 'Quan ly thuong hieu',
@@ -142,19 +155,44 @@ class BrandController extends BaseController
         $idBrand = $_GET['id'] ?? null;
         $idBrand = is_numeric($idBrand) ? $idBrand : 0;
 
+        $state = $_GET['state'] ?? null;
+
+        $messErrors = [];
+        if($state === 'error' && !empty($_SESSION['errorsEditBrand'])){
+            $messErrors = $_SESSION['errorsEditBrand'];
+        }
+
+        $existName = null;
+        if($state === 'exist' && !empty($_SESSION['errorsEditExitsBrand'])){
+            $existName = $_SESSION['errorsEditExitsBrand'];
+        }
+
         // lay du lieu tu database thong id
         $infoBrand = $this->brandModel->getInfoBrandById($idBrand);
         if(empty($infoBrand)){
             $this->notFoundData();
         } else {
 
-            $this->loadHeaderView();
+            // hien thi giao dien them moi
+            $headers = [
+                'title' => 'Cap nhat du lieu thuong hieu',
+                'desc' => 'Thuong hieu'
+            ];
+            $this->loadHeaderView($headers);
             $this->loadView('brand/edit_view',[
                 'infoBrand' => $infoBrand,
-                'pathLogo' => self::PATH_LOGO_BRAND
+                'pathLogo' => self::PATH_LOGO_BRAND,
+                'messErrors' => $messErrors,
+                'existName' => $existName,
+                'state' => $state
             ]);
             $this->loadFooterView();
         }
+    }
+
+    public function notView()
+    {
+        $this->notFoundData();
     }
 
     public function handleEdit()
@@ -164,7 +202,7 @@ class BrandController extends BaseController
             $id = is_numeric($id) ? $id : 0;
             $infoBrand = $this->brandModel->getInfoBrandById($id);
             if(empty($infoBrand)){
-                header('Location:index.php?c=brand&m=edit&id='.$id.'&state=error');
+                header('Location:index.php?c=brand&m=notView');
             } else {
                 $nameBrand = $_POST['nameBrand'] ?? null;
                 $nameBrand = strip_tags($nameBrand);
@@ -177,19 +215,90 @@ class BrandController extends BaseController
                 $status = ($status === '1' || $status === '0') ? $status : 0;
 
                 $logo = $infoBrand['logo'];
+                $fagUploadLogo = false;
 
                 // khong bat buoc phai upload file logo
                 if(!empty($_FILES['logoBrand']['tmp_name'])){
                     // nguoi dung co muon thay doi anh logo
                     // tien hanh upload anh logo
                     $logo = uploadFileToServer($_FILES['logoBrand'], self::PATH_LOGO_BRAND, 1);
+                    $fagUploadLogo = true;
                 }
 
                 // validate data
-                // kiem tra rang buoc du lieu: check ten thuong hieu voi nhung thang khac, tru chinh no
-                // insert data
+                $arrErrors = ValidationBrand::validateCreateBrand($nameBrand, $logo);
+                $flagCheckErrors = false;
+                foreach($arrErrors as $error){
+                    if(!empty($error)){
+                        $flagCheckErrors = true;
+                        break;
+                    }
+                }
 
+                if($flagCheckErrors) {
+                    // co loi
+                    $_SESSION['errorsEditBrand'] = $arrErrors;
+                    // xoa anh logo neu upload moi
+                    if($fagUploadLogo){
+                        deleteFileFromServer(self::PATH_LOGO_BRAND, $logo);
+                    }
+                    // quay ve lai dung form edit brand
+                    header("Location:index.php?c=brand&m=edit&id={$id}&state=error");
+                } else {
+                    // xoa bo session loi neu co
+                    if(!empty($_SESSION['errorsEditBrand'])){
+                        unset($_SESSION['errorsEditBrand']);
+                    }
+                    // kiem tra rang buoc du lieu: check ten thuong hieu voi nhung thang khac, tru chinh no
+                    $checkExistsNameBrand = $this->brandModel->checkExistsNameBrandById($nameBrand, $id);
+                    if($checkExistsNameBrand){
+                        // xoa anh logo neu upload moi
+                        if($fagUploadLogo){
+                            deleteFileFromServer(self::PATH_LOGO_BRAND, $logo);
+                        }
+                        $_SESSION['errorsEditExitsBrand'] = $nameBrand;
+                        // ton tai ten thuong hieu can sua
+                        // quay ve lai dung form edit brand
+                        header("Location:index.php?c=brand&m=edit&id={$id}&state=exist");
+                    } else {
+                        // xoa loi exist brand neu co
+                        if(!empty($_SESSION['errorsEditExitsBrand'])){
+                            unset($_SESSION['errorsEditExitsBrand']);
+                        }
+                        // update data
+                        $updateBrand = $this->brandModel->updateBrandById($id, $nameBrand, $slug, $description, $status, $logo);
+                        if($updateBrand){
+                            // update thanh cong
+                            header("Location:index.php?c=brand"); // list brands
+                        } else {
+                            // update that bai
+                            // o lai form edit brand
+                            // xoa anh logo neu upload moi
+                            if($fagUploadLogo){
+                                deleteFileFromServer(self::PATH_LOGO_BRAND, $logo);
+                            }
+                            header("Location:index.php?c=brand&m=edit&id={$id}&state=fail");
+                        }
+                    }
+                }   
             }
+        }
+    }
+
+    public function delete()
+    {
+        // nhan cac du lieu tu phia ajax client gui len
+        $idBrand = $_POST['id'] ?? null;
+        if(is_numeric($idBrand)){
+            // tien hanh xoa du lieu
+            $del = $this->brandModel->deleteBrandById($idBrand);
+            if($del){
+                echo "OK";
+            } else {
+                echo "FAIL";
+            }
+        } else {
+            echo "ERROR_PARAMS";
         }
     }
 }
